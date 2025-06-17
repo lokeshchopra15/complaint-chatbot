@@ -18,7 +18,14 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # MongoDB setup
-client = MongoClient("mongodb://localhost:27017/")
+
+
+mongo_uri = os.getenv("MONGO_URI")
+print("Connected to:", mongo_uri)# Render & Local dono jagah safe
+client = MongoClient(mongo_uri)
+
+
+
 db = client["eoxs_chatbot"]
 collection = db["complaints"]
 
