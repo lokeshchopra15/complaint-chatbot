@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title> Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js for chart features -->
+  <style>
+    @keyframes scalePulse {
+      0%, 100% { transform: scale(1) translateY(2px); }
+      50% { transform: scale(1.4) translateY(2px); }
+    }
+    /* Modal Styling */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 600px;
+    }
+    
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white transition-all">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 shadow-lg flex-shrink-0 transition-transform duration-300 transform translate-x-0">
+      <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
+        <div class="flex items-center gap-2">
+          <button onclick="toggleSidebar()" class="focus:outline-none text-xl">☰</button>
+          <span class="text-xl font-bold text-green-600" id="adminLabel"> Admin</span>
+        </div>
+      </div>
+      <nav id="sidebarLinks" class="p-4 space-y-3">
+        <a href="#" class="flex items-center gap-2 hover:bg-green-100 dark:hover:bg-green-700 p-2 rounded">🧾 <span>Dashboard</span></a>
+        <a href="#" class="flex items-center gap-2 hover:bg-green-100 dark:hover:bg-green-700 p-2 rounded">📂 <span>Complaints</span></a>
+        <a href="#" class="flex items-center gap-2 hover:bg-green-100 dark:hover:bg-green-700 p-2 rounded">⚙️ <span>Settings</span></a>
+      </nav>
+    </aside>
+    
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">🛠️ Admin Complaint Dashboard</h1>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleDarkMode()" class="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600">🌙 Toggle Theme</button>
+          <button onclick="exportTableToExcel()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">📁 Export</button>
+          <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">🚪 Logout</button>
+        </div>
+      </div>
+
+      <!-- Summary Counters -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div class="text-gray-600 dark:text-gray-300 text-sm">📋 Total Complaints</div>
+          <div class="text-2xl font-bold text-green-600">{{ complaints|length }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div class="text-gray-600 dark:text-gray-300 text-sm">⏳ Pending Complaints</div>
+          <div class="text-2xl font-bold text-yellow-500">{{ pending_count }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div class="text-gray-600 dark:text-gray-300 text-sm">✅ Replied Complaints</div>
+          <div class="text-2xl font-bold text-blue-500">{{ replied_count }}</div>
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="flex flex-wrap items-center gap-12 mb-4">
+       <!-- FILTER PANEL -->
+<div class="relative inline-block text-left">
+  <button onclick="toggleFilterPanel()" class="bg-blue-500 text-white px-4 py-2 rounded">
+    Filter
+  </button>
+
+  <div id="filterPanel" class="hidden absolute z-10 mt-2 w-64 p-4 bg-white dark:bg-gray-800 shadow-lg rounded">
+    <!-- Issue Filter -->
+    <label class="block mb-2">
+      <span class="text-sm text-gray-700 dark:text-gray-200">Filter by Issue</span>
+      <select id="filterIssue" class="w-full border p-2 rounded dark:bg-gray-700 dark:text-white">
+        <option value="">All</option>
+        <option>Manager behavior</option>
+        <option>Harassment/Discrimination</option>
+        <option>Mental health or emotional safety</option>
+        <option>HR or company policy conflict</option>
+        <option>Payroll/compensation issue</option>
+        <option>Burnout or workload mismanagement</option>
+        <option>Ethics or misconduct</option>
+        <option>Infrastructure/tech problems</option>
+        <option>Interpersonal/team conflict</option>
+        <option>Posh</option>
+        <option>General feedback</option>
+      </select>
+    </label>
+
+    <!-- Department Filter -->
+    <label class="block mb-2">
+      <span class="text-sm text-gray-700 dark:text-gray-200">Filter by Department</span>
+      <select id="filterDept" class="w-full border p-2 rounded dark:bg-gray-700 dark:text-white">
+        <option value="">All</option>
+        <option>HR</option>
+        <option>Management</option>
+      </select>
+    </label>
+    <label class="block mb-2">
+      <span class="text-sm text-gray-700 dark:text-gray-200">Filter by Days</span>
+      <select id="filterDays" class="w-full border p-2 rounded dark:bg-gray-700 dark:text-white">
+        <option value="">All time</option>
+        <option>Today</option>
+        <option>Last 7 days</option>
+        <option>Last 30 days</option>
+        <option>Last 90 days</option>
+      </select>
+    </label>
+    
+
+    <!-- Apply Button -->
+    <button onclick="filterTable()" class="mt-2 bg-green-500 text-white px-3 py-1 rounded">Apply</button>
+  </div>
+</div>
+
+
+        <label class="flex items-center gap-2">
+          <span>Search : </span>
+          <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search by Ticket ID or Employee Id..." class="border rounded p-2 w-[300px] dark:bg-gray-800 dark:text-white"/>
+        </label>
+        <label class="flex items-center gap-2">
+          <span>Sensitive Complaints : </span>
+          <input type="checkbox" id="sensitiveFilter" onchange="filterTable()" class="form-checkbox h-4 w-4 text-red-600 dark:bg-gray-800">
+        </label>
+         <label class="flex items-center gap-2">
+    <span>Pending Complaints : </span>
+    <input type="checkbox" id="pendingFilter" onchange="filterTable()" class="form-checkbox h-4 w-4 text-yellow-500 dark:bg-gray-800">
+  </label>
+        <label>
+          <button onclick="clearFilters()" class="bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1 rounded hover:bg-gray-400 dark:hover:bg-gray-600">
+            🧹 Clear Filters
+          </button>
+        </label>
+      </div>
+
+      <!-- Complaints Table -->
+      <div class="overflow-x-auto shadow-md rounded-lg">
+        <table id="complaintTable" class="w-full table-auto text-sm text-left dark:bg-gray-800 dark:text-white">
+         <thead class="bg-green-600 text-white">
+  <tr>
+    <th class="px-4 py-3">Ticket ID</th>
+    <th class="px-4 py-3">Employee ID</th>
+    <th class="px-4 py-3">Department</th> <!-- ✅ Added -->
+    <th class="px-4 py-3">Issue</th>
+    <th class="px-4 py-3">Explanation</th>
+    <th class="px-4 py-3">Reply</th>
+    <th class="px-4 py-3">Status</th>
+    <th class="px-4 py-3">Actions</th>
+  </tr>
+</thead>
+
+          <tbody>
+  {% for complaint in complaints %}
+    <tr data-issue="{{ complaint.issue }}" data-department="{{ complaint.department }}"  data-date="{{ complaint.date }}"  class="border-t dark:border-gray-700">
+
+      <td class="px-4 py-2">{{ complaint.ticket_id }}</td>
+      <td class="px-4 py-2">{{ complaint.employee_id }}</td>
+      <td class="px-4 py-2">{{ complaint.department }}</td> <!-- ✅ Added -->
+      <td class="py-3">
+        <div class="flex items-center">
+          <span>{{ complaint.issue }}</span>
+          {% if complaint.is_sensitive %}
+            <span
+              class="inline-block w-3.5 h-3.5 ml-1.5 rounded-full bg-red-700"
+              style="animation: scalePulse 1s infinite ease-in-out;"
+              title="Sensitive Complaint">
+            </span>
+          {% endif %}
+        </div>
+      </td>
+      <!-- rest remains unchanged -->
+
+                <td class="px-4 py-2">{{ complaint.explanation }}</td>
+                <td class="px-4 py-2">
+                  {% if complaint.reply %}
+                    {{ complaint.reply }}
+                  {% else %}
+                    <form action="/reply/{{ complaint._id }}" method="POST">
+                      <textarea name="reply" required class="w-full border rounded p-2 mb-2 dark:bg-gray-700"></textarea>
+                      <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Send Reply</button>
+                    </form>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2">
+                  {% if complaint.reply %}
+                    <span class="text-green-600 font-semibold">Replied ✅</span>
+                  {% else %}
+                    <span class="text-yellow-500 font-semibold">Pending ⏳</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2">
+                  <button onclick="confirmDelete('{{ complaint._id }}')" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">🗑️</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- New Features -->
+      <!-- Chart -->
+      <!-- Chart -->
+<!-- Chart -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+  <h3 class="text-lg font-semibold mb-4">Complaint Statistics</h3>
+  <div class="w-64 sm:w-80 md:w-96 mx-auto">
+    <canvas id="complaintsChart"></canvas>
+  </div>
+</div>
+
+      <!-- Audit Trail Modal -->
+      <div id="auditTrailModal" class="modal">
+        <div class="modal-content">
+          <h2 class="text-xl font-bold">Audit Trail</h2>
+          <ul id="auditTrailList"></ul>
+          <button onclick="closeAuditTrailModal()" class="bg-blue-500 text-white px-4 py-2 rounded">Close</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    document.documentElement.classList.add('dark');
+    let sidebarVisible = true;
+    
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const adminLabel = document.getElementById("adminLabel");
+      const sidebarLinks = document.getElementById("sidebarLinks");
+      sidebarVisible = !sidebarVisible;
+      if (!sidebarVisible) {
+        sidebar.classList.remove("w-64");
+        sidebar.classList.add("w-16");
+        adminLabel.classList.add("hidden");
+        sidebarLinks.classList.add("hidden");
+      } else {
+        sidebar.classList.add("w-64");
+        sidebar.classList.remove("w-16");
+        adminLabel.classList.remove("hidden");
+        sidebarLinks.classList.remove("hidden");
+      }
+    }
+
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    
+    function clearFilters() {
+  document.getElementById("filterIssue").value = "";
+  document.getElementById("filterDept").value = "";
+  document.getElementById("filterDays").value = "";
+
+  const sensitiveFilter = document.getElementById("sensitiveFilter");
+  if (sensitiveFilter) sensitiveFilter.checked = false;
+
+  const pendingFilter = document.getElementById("pendingFilter");  // Clear pending filter
+  if (pendingFilter) pendingFilter.checked = false;
+
+  filterTable(); // ✅ Apply blank filters and show all rows
+}
+
+
+    function exportTableToExcel() {
+      const table = document.getElementById("complaintTable");
+      let csv = [];
+      const rows = table.querySelectorAll("tr");
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("td, th");
+        let rowData = Array.from(cols).map(col => `"${col.innerText.trim()}"`);
+        csv.push(rowData.join(","));
+      });
+      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download ="complaints.csv";
+link.click();
+}
+function searchTable() {
+  const input = document.getElementById("searchInput");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#complaintTable tbody tr");
+  rows.forEach(row => {
+    const ticketID = row.cells[0].textContent.toLowerCase();
+    const empid = row.cells[1].textContent.toLowerCase();
+    if (ticketID.includes(filter) || empid.includes(filter)) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+}
+
+
+function toggleFilterPanel() {
+  const panel = document.getElementById("filterPanel");
+  panel.classList.toggle("hidden");
+}
+
+function filterTable() {
+  const issueFilter = document.getElementById("filterIssue").value.toLowerCase();
+  const deptFilter = document.getElementById("filterDept").value.toLowerCase();
+  const daysValue = document.getElementById('filterDays').value;
+  const sensitiveOnly = document.getElementById("sensitiveFilter")?.checked;
+  const pendingOnly = document.getElementById("pendingFilter")?.checked; // Pending filter
+
+  const rows = document.querySelectorAll("#complaintTable tbody tr");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0); // Normalize to start of the day
+
+  rows.forEach(row => {
+    const issue = row.dataset.issue?.toLowerCase() || '';
+    const department = row.dataset.department?.toLowerCase() || '';
+    const isSensitive = row.innerHTML.includes("Sensitive Complaint");
+    const isPending = row.innerHTML.includes("Pending"); // Check for pending status
+    const rowDateStr = row.dataset.date;
+
+    let matchesIssue = !issueFilter || issue.includes(issueFilter);
+    let matchesDept = !deptFilter || department.includes(deptFilter);
+    let matchSensitive = !sensitiveOnly || isSensitive;
+    let matchPending = !pendingOnly || isPending; // Check if pending filter is enabled
+
+    let matchDate = true;
+    if (rowDateStr && daysValue && daysValue !== "All Time") {
+      const rowDate = new Date(rowDateStr);
+      rowDate.setHours(0, 0, 0, 0); // Normalize
+
+      const timeDiff = now - rowDate;
+      const dayDiff = timeDiff / (1000 * 3600 * 24);
+
+      switch (daysValue) {
+        case "Today":
+          matchDate = dayDiff === 0;
+          break;
+        case "Last 7 days":
+          matchDate = dayDiff <= 7;
+          break;
+        case "Last 30 days":
+          matchDate = dayDiff <= 30;
+          break;
+        case "Last 90 days":
+          matchDate = dayDiff <= 90;
+          break;
+        default:
+          matchDate = true;
+      }
+    }
+
+    const shouldDisplay = matchesIssue && matchesDept && matchSensitive && matchPending && matchDate;
+    row.style.display = shouldDisplay ? "" : "none";
+  });
+
+  document.getElementById("filterPanel").classList.add("hidden");
+}
+
+
+
+function openModal() {
+  document.getElementById("historyModal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("historyModal").style.display = "none";
+}
+
+function openAuditTrailModal() {
+  document.getElementById("auditTrailModal").style.display = "flex";
+}
+
+function closeAuditTrailModal() {
+  document.getElementById("auditTrailModal").style.display = "none";
+}
+
+function confirmDelete(complaintId) {
+  if (confirm("Are you sure you want to delete this complaint?")) {
+    fetch(`/deleteComplaint/${complaintId}`, {
+      method: 'DELETE',
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.message) {
+        alert(data.message);
+        location.reload();  // Reload the page after deletion
+      } else {
+        alert(data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to delete complaint');
+    });
+  }
+}
+
+
+// Chart.js for complaint statistics
+const ctx = document.getElementById('complaintsChart').getContext('2d');
+const complaintsChart = new Chart(ctx, {
+  type: 'pie',
+  data: {
+    labels: ['Pending', 'Resolved'],
+    datasets: [{
+      label: 'Complaints Status',
+      data: [{{ pending_count }}, {{ replied_count }}],
+      backgroundColor: ['#ffcc00', '#28a745'],
+      borderColor: ['#fff', '#fff'],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      tooltip: {
+        callbacks: {
+          label: function(tooltipItem) {
+            return tooltipItem.raw + ' Complaints';
+          }
+        }
+      }
+    }
+  }
+});
+</script> </body> </html>

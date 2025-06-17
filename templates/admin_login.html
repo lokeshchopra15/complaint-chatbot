@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login </title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: url('https://img.freepik.com/free-photo/flat-lay-workstation-with-copy-space-laptop_23-2148430879.jpg?semt=ais_hybrid&w=740') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+        .blurred-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            filter: blur(3px);
+            z-index: -1;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+        }
+        h2 {
+            text-align: center;
+            color: #00796b;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #00796b;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+        }
+        button:hover {
+            background: #004d40;
+        }
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 16px;
+            color: white;
+            background-color: rgba(0, 121, 107, 0.8);
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            background-color: rgba(0, 77, 64, 0.8);
+        }
+        .back-link span {
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">←<span>Back</span></a>
+    <div class="blurred-background"></div>
+    <div class="login-box">
+        <h2>🔐 Admin Login</h2>
+        <form method="POST" action="/admin">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>
